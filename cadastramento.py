@@ -1,82 +1,79 @@
 import subprocess
 import time
-import webbrowser
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import SessionNotCreatedException
 
 class RoboNUPCO:
 
     def __init__(self):
         self.driver = None
 
-    def abrir_chrome(self):
+    def abrir_aba_efisco(self):
 
-        url = "https://efisco.sefaz.pe.gov.br/"
-
-        webbrowser.open_new_tab(url)
-
-        print("Chrome iniciado.")
-        time.sleep(5)
+        self.driver.switch_to.new_window("tab")
+        self.driver.get("https://efisco.sefaz.pe.gov.br/")
 
     def aguardar_login_efisco(self):
 
         while True:
 
-            # -----------------------------------
-            # Usuário já está logado?
-            # -----------------------------------
+
             try:
 
                 self.driver.find_element(
                     By.XPATH,
-                    '//*[@id="a_encerrar_sessao"]'
+                    '//*[@id="a_usuario"]'
                 )
 
-                print("✅ Usuario Logado no eFisco")
-                return "Usuario Logado no eFisco"
+                return "✅ Usuario Logado no eFisco"
 
             except NoSuchElementException:
                 pass
 
-            # -----------------------------------
-            # Usuário ainda não está logado
-            # -----------------------------------
             try:
 
-                botao_gov = self.driver.find_element(
+                botao = self.driver.find_element(
                     By.XPATH,
                     '//*[@id="btt_gov"]'
                 )
 
-                print("🔐 Usuário não está logado.")
-                print("Abrindo tela do Gov.br...")
-
-                botao_gov.click()
-
-                print("Aguardando usuário realizar o login...")
-
-                while True:
-
-                    try:
-
-                        self.driver.find_element(
-                            By.XPATH,
-                            '//*[@id="a_encerrar_sessao"]'
-                        )
-
-                        print("✅ Usuario Logado no eFisco")
-                        return "Usuario Logado no eFisco"
-
-                    except NoSuchElementException:
-                        time.sleep(1)
+                botao.click()
+                time.sleep(2)
+                continue
 
             except NoSuchElementException:
                 pass
 
-            time.sleep(1)
+            try:
+
+                WebDriverWait(self.driver, 300).until(
+                    EC.presence_of_element_located(
+                        (By.ID, "a_usuario")
+                    )
+                )
+
+                print("✅ Usuário Logado no eFisco")
+                return "Usuario Logado no eFisco"
+
+            except:
+
+                return None
+    
+    def ir_para_aba_efisco(self):
+
+        for aba in self.driver.window_handles:
+
+            self.driver.switch_to.window(aba)
+
+            if "efisco" in self.driver.current_url.lower():
+
+                return
 
     def conectar(self):
 
@@ -85,15 +82,31 @@ class RoboNUPCO:
 
         self.driver = webdriver.Chrome(options=options)
 
-        print("Selenium conectado ao Chrome.")
+    def tratar_tela_ja_logado(self):
+
+            try:
+
+                self.driver.find_element(
+                    By.XPATH,
+                    '//*[@id="kc-info-message"]/p[1]'
+                )
+
+                self.driver.find_element(
+                    By.XPATH,
+                    '//*[@id="kc-info-message"]/p[2]/a'
+                ).click()
+
+                return True
+
+            except NoSuchElementException:
+
+                return False
 
     def iniciar(self):
 
-        self.abrir_chrome()
         self.conectar()
-
+        self.abrir_aba_efisco()
         status = self.aguardar_login_efisco()
-
         print(status)
 
 
