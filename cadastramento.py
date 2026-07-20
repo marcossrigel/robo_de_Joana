@@ -3,6 +3,8 @@ import time
 import gspread
 import pandas as pd
 
+
+from selenium.common.exceptions import (StaleElementReferenceException,TimeoutException)
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -54,7 +56,6 @@ class RoboNUPCO:
                     By.XPATH,
                     '//*[@id="btt_gov"]'
                 )
-
                 botao.click()
                 time.sleep(2)
                 continue
@@ -76,7 +77,19 @@ class RoboNUPCO:
             except:
 
                 return None
-    
+
+    def esperar_elemento(self, by, valor, timeout=60):
+
+        print(f"Aguardando elemento: {valor}")
+
+        WebDriverWait(self.driver, timeout).until(
+            lambda d: len(d.find_elements(by, valor)) > 0
+        )
+
+        print(f"Elemento {valor} encontrado.")
+
+        return self.driver.find_element(by, valor)
+
     def ir_para_aba_efisco(self):
 
         for aba in self.driver.window_handles:
@@ -88,7 +101,7 @@ class RoboNUPCO:
                 return
 
     def etapa_01_cadastramento(self, linha):
-
+        
         print(f"Iniciando cadastro da OB {linha['Número da OB']}")
 
         #
@@ -130,22 +143,22 @@ class RoboNUPCO:
         #
         # Aguarda primeira tela
         #
-        WebDriverWait(self.driver, 60).until(
-            EC.element_to_be_clickable(
-                (By.ID, "cdGestao")
-            )
-        )
+        #WebDriverWait(self.driver, 60).until(
+        #    EC.element_to_be_clickable(
+        #        (By.ID, "cdGestao")
+        #    )
+        #)
+
+        gestao = self.esperar_elemento(By.ID, "cdGestao")
+
+        Select(gestao).select_by_index(1)
 
         #
         # Unidade de Gestão
         #
-        Select(
-            WebDriverWait(self.driver, 60).until(
-                EC.element_to_be_clickable(
-                    (By.ID, "cdGestao")
-                )
-            )
-        ).select_by_index(1)
+        gestao = self.esperar_elemento(By.ID, "cdGestao")
+
+        Select(gestao).select_by_index(1)
 
         #
         # Ano OB
@@ -259,7 +272,7 @@ class RoboNUPCO:
         except:
 
             print("Página 1 preenchida.")
-
+            time.sleep(2)
             return True
 
     def conectar(self):
@@ -406,7 +419,7 @@ class RoboNUPCO:
         ).click()
 
         print("Segunda confirmação realizada.")
-
+        time.sleep(2)
         return True
 
     def etapa_03_finalizar_cadastro(self, linha):
@@ -493,13 +506,13 @@ class RoboNUPCO:
             #
             if not self.etapa_01_cadastramento(linha):
                 continue
-
+            time.sleep(2)
             #
             # Etapa 02
             #
             if not self.etapa_02_continua_cadastro(linha):
                 continue
-
+            time.sleep(2)
             #
             # Etapa 03
             #
