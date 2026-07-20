@@ -37,7 +37,6 @@ class RoboNUPCO:
 
         while True:
 
-
             try:
 
                 self.driver.find_element(
@@ -99,6 +98,18 @@ class RoboNUPCO:
             if "efisco" in self.driver.current_url.lower():
 
                 return
+    
+    def clicar(self, by, valor):
+
+        while True:
+            try:
+                elemento = self.driver.find_element(by, valor)
+                elemento.click()
+                return
+
+            except StaleElementReferenceException:
+                print(f"{valor} ficou stale. Tentando novamente...")
+                time.sleep(1)
 
     def etapa_01_cadastramento(self, linha):
         
@@ -148,10 +159,6 @@ class RoboNUPCO:
         #        (By.ID, "cdGestao")
         #    )
         #)
-
-        gestao = self.esperar_elemento(By.ID, "cdGestao")
-
-        Select(gestao).select_by_index(1)
 
         #
         # Unidade de Gestão
