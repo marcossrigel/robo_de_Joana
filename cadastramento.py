@@ -5,6 +5,7 @@ import pandas as pd
 
 from selenium.common.exceptions import (StaleElementReferenceException,TimeoutException)
 from selenium import webdriver
+from datetime import datetime
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
@@ -78,13 +79,9 @@ class RoboNUPCO:
 
     def esperar_elemento(self, by, valor, timeout=60):
 
-        print(f"Aguardando elemento: {valor}")
-
         WebDriverWait(self.driver, timeout).until(
             lambda d: len(d.find_elements(by, valor)) > 0
         )
-
-        print(f"Elemento {valor} encontrado.")
 
         return self.driver.find_element(by, valor)
 
@@ -121,11 +118,7 @@ class RoboNUPCO:
 
             self.driver.find_element(By.ID, "btt_incluir")
 
-            print("Tela de Cadastro de Prestação de Contas já aberta.")
-
         except NoSuchElementException:
-
-            print("Abrindo Cadastro de Prestação de Contas...")
 
             WebDriverWait(self.driver, 60).until(
                 EC.element_to_be_clickable(
@@ -286,8 +279,6 @@ class RoboNUPCO:
                     (By.ID, "btt_alterar")
                 )
             )
-
-            print("Tela inicial restaurada.")
 
             return False
 
@@ -464,6 +455,11 @@ class RoboNUPCO:
         )
 
         #
+        # Captura e salva a Prestação de Contas
+        #
+        self.salvar_prestacao(linha)
+
+        #
         # Prosseguir
         #
         self.driver.find_element(
@@ -471,19 +467,67 @@ class RoboNUPCO:
             "btt_prosseguir"
         ).click()
 
-        print(
-            f"✅ Cadastro da OB {linha['Número da OB']} concluído."
-        )
-
+        print(f"✅ Cadastro da OB {linha['Número da OB']} concluído.")
         print("Aguardando próximo registro da planilha...")
 
         return True
 
 
+    def salvar_prestacao(self, linha):
+
+        #
+        # Captura o número da Prestação de Contas (PC)
+        #
+        elemento = WebDriverWait(
+            self.driver,
+            30
+        ).until(
+            EC.presence_of_element_located(
+                (
+                    By.XPATH,
+                    "//td[@class='campoformulario']/b/font"
+                )
+            )
+        )
+
+        numero_pc = elemento.text.strip()
+
+        #
+        # Salva no arquivo
+        #
+        with open(
+            "numero_das_pcs.txt",
+            "a",
+            encoding="utf-8"
+        ) as arquivo:
+
+            arquivo.write(
+                "=" * 60 + "\n"
+            )
+
+            arquivo.write(
+                f"Data/Hora: {datetime.now():%d/%m/%Y %H:%M:%S}\n"
+            )
+
+            arquivo.write(
+                f"Número da OB: {linha['Número da OB']}\n"
+            )
+
+            arquivo.write(
+                f"Prestação Gerada (PC): {numero_pc}\n"
+            )
+
+            arquivo.write(
+                "=" * 60 + "\n\n"
+            )
+
+        print(
+            f"PC Gerada: {numero_pc}"
+        )
+
     def tratar_tela_ja_logado(self):
 
             try:
-
                 self.driver.find_element(
                     By.XPATH,
                     '//*[@id="kc-info-message"]/p[1]'
@@ -497,7 +541,6 @@ class RoboNUPCO:
                 return True
 
             except NoSuchElementException:
-
                 return False
 
     def iniciar(self):
