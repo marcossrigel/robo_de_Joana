@@ -472,7 +472,6 @@ class RoboNUPCO:
 
         return True
 
-
     def salvar_prestacao(self, linha):
 
         #
@@ -559,7 +558,7 @@ class RoboNUPCO:
 
         print(f"{len(dados)} registros encontrados.")
 
-        for linha in dados[:10]:
+        for linha in dados:
 
             print()
             print("=" * 60)
@@ -571,18 +570,21 @@ class RoboNUPCO:
             #
             if not self.etapa_01_cadastramento(linha):
                 continue
+
             time.sleep(2)
+
             #
             # Etapa 02
             #
             if not self.etapa_02_continua_cadastro(linha):
                 continue
+
             time.sleep(2)
+
             #
             # Etapa 03
             #
             self.etapa_03_finalizar_cadastro(linha)
-
 
 if __name__ == "__main__":
 
