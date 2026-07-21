@@ -3,7 +3,6 @@ import time
 import gspread
 import pandas as pd
 
-
 from selenium.common.exceptions import (StaleElementReferenceException,TimeoutException)
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -161,6 +160,11 @@ class RoboNUPCO:
         #)
 
         #
+        # Aguarda a primeira tela terminar de carregar
+        #
+        self.esperar_elemento(By.ID, "sqOrdemBancaria")
+
+        #
         # Unidade de Gestão
         #
         gestao = self.esperar_elemento(By.ID, "cdGestao")
@@ -273,6 +277,17 @@ class RoboNUPCO:
                 By.ID,
                 "btt_desistir"
             ).click()
+
+            WebDriverWait(
+                self.driver,
+                60
+            ).until(
+                EC.presence_of_element_located(
+                    (By.ID, "btt_alterar")
+                )
+            )
+
+            print("Tela inicial restaurada.")
 
             return False
 
