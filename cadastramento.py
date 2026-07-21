@@ -516,7 +516,7 @@ class RoboNUPCO:
 
         print(f"{len(dados)} registros encontrados.")
 
-        for linha in dados[:20]:
+        for linha in dados[:10]:
 
             print()
             print("=" * 60)
