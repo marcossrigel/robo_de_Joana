@@ -517,6 +517,10 @@ class RoboNUPCO:
             )
 
             arquivo.write(
+                "Status: PENDENTE\n"
+            )
+
+            arquivo.write(
                 "=" * 60 + "\n\n"
             )
 
@@ -557,7 +561,7 @@ class RoboNUPCO:
         dados = self.ler_base_de_dados()
 
         print(f"{len(dados)} registros encontrados.")
-
+        
         for linha in dados:
 
             print()
