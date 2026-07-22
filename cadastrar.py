@@ -20,14 +20,29 @@ class RoboNUPCO:
         self.driver = None
 
     def ler_base_de_dados(self):
-        url = (
-            "https://docs.google.com/spreadsheets/d/"
-            "1aHF6-K3oEeW-H21DKrXGSNJxVPGakRplzH9Og9R4jvo/"
-            "export?format=csv&gid=0"
-        )
-        df = pd.read_csv(url)
-        return df.to_dict(orient="records")
 
+        gc = gspread.service_account(filename="credenciais.json")
+
+        planilha = gc.open("NUPCO - base de dados")
+
+        self.aba = planilha.sheet1
+
+        dados = self.aba.get_all_records()
+
+        return dados
+
+    def marcar_como_cadastrado(self, numero_ob):
+
+        celula = self.aba.find(str(numero_ob))
+
+        self.aba.update_cell(
+            celula.row,
+            5,          # coluna E = Status
+            "Já Cadastrado"
+        )
+
+        print(f"OB {numero_ob} marcada como Já Cadastrado.")
+        
     def abrir_aba_efisco(self):
 
         self.driver.switch_to.new_window("tab")
@@ -249,7 +264,7 @@ class RoboNUPCO:
                 By.ID,
                 "btt_prosseguir"
             ).click()
-
+            
             print(
                 f"OB {linha['Número da OB']} já cadastrada."
             )
@@ -278,6 +293,10 @@ class RoboNUPCO:
                 EC.presence_of_element_located(
                     (By.ID, "btt_alterar")
                 )
+            )
+
+            self.marcar_como_cadastrado(
+                linha["Número da OB"]
             )
 
             return False
@@ -467,6 +486,10 @@ class RoboNUPCO:
             "btt_prosseguir"
         ).click()
 
+        self.marcar_como_cadastrado(
+            linha["Número da OB"]
+        )
+
         print(f"✅ Cadastro da OB {linha['Número da OB']} concluído.")
         print("Aguardando próximo registro da planilha...")
 
@@ -563,6 +586,11 @@ class RoboNUPCO:
         print(f"{len(dados)} registros encontrados.")
         
         for linha in dados:
+
+            status = str(linha.get("Status", "")).strip().lower()
+
+            if status == "já cadastrado":
+                continue
 
             print()
             print("=" * 60)
