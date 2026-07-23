@@ -25,7 +25,8 @@ class RoboNUPCO:
 
         planilha = gc.open("NUPCO - base de dados")
 
-        self.aba = planilha.sheet1
+        self.aba = planilha.worksheet("base_de_dados")
+        self.aba_pcs = planilha.worksheet("numero_das_pcs")
 
         dados = self.aba.get_all_records()
 
@@ -497,9 +498,6 @@ class RoboNUPCO:
 
     def salvar_prestacao(self, linha):
 
-        #
-        # Captura o número da Prestação de Contas (PC)
-        #
         elemento = WebDriverWait(
             self.driver,
             30
@@ -514,42 +512,17 @@ class RoboNUPCO:
 
         numero_pc = elemento.text.strip()
 
-        #
-        # Salva no arquivo
-        #
-        with open(
-            "numero_das_pcs.txt",
-            "a",
-            encoding="utf-8"
-        ) as arquivo:
-
-            arquivo.write(
-                "=" * 60 + "\n"
-            )
-
-            arquivo.write(
-                f"Data/Hora: {datetime.now():%d/%m/%Y %H:%M:%S}\n"
-            )
-
-            arquivo.write(
-                f"Número da OB: {linha['Número da OB']}\n"
-            )
-
-            arquivo.write(
-                f"Prestação Gerada (PC): {numero_pc}\n"
-            )
-
-            arquivo.write(
-                "Status: PENDENTE\n"
-            )
-
-            arquivo.write(
-                "=" * 60 + "\n\n"
-            )
-
-        print(
-            f"PC Gerada: {numero_pc}"
+        self.aba_pcs.append_row(
+            [
+                datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                linha["Número da OB"],
+                numero_pc,
+                "PENDENTE"
+            ],
+            value_input_option="USER_ENTERED"
         )
+
+        print(f"PC Gerada: {numero_pc}")
 
     def tratar_tela_ja_logado(self):
 
