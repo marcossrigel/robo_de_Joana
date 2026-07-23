@@ -1,6 +1,7 @@
 import pyautogui # Para automatizar o controle do mouse e teclado, útil quando o Selenium não consegue interagir com algum elemento na tela
 import os # Usada para lidar com arquivos e diretórios no sistema operacional (Biblioteca da própria linguagem Python)
 import time
+import gspread
 
 # ===== IMPORTANDO BIBLIOTECAS =======
 from selenium import webdriver # Usada para controlar o navegador (abrir páginas, clicar, preencher formulários etc.)
@@ -33,57 +34,41 @@ def aguardar_login():
 
 def ler_pcs_pendentes():
 
+    dados = aba_pcs.get_all_records()
+
     pcs = []
 
-    with open("numero_das_pcs.txt", "r", encoding="utf-8") as arquivo:
+    for indice, linha in enumerate(dados, start=2):
 
-        linhas = arquivo.readlines()
+        if str(linha["Status"]).strip().upper() != "PENDENTE":
+            continue
 
-    ob = None
-    pc = None
-    status = None
+        pc_completa = str(linha["Prestação Gerada (PC)"]).strip()
 
-    for linha in linhas:
+        if not pc_completa.startswith("2026PC"):
+            print(f"⚠️ PC inválida ignorada: {pc_completa}")
+            continue
 
-        linha = linha.strip()
+        numero = pc_completa.replace("2026PC", "")
 
-        if linha.startswith("Número da OB:"):
-            ob = linha.split(":", 1)[1].strip()
+        pcs.append({
 
-        elif linha.startswith("Prestação Gerada (PC):"):
-            pc = linha.split(":", 1)[1].strip()
+            "linha": indice,
+            "ob": linha["Número da OB"],
+            "pc_completa": pc_completa,
+            "numero": numero
 
-        elif linha.startswith("Status:"):
-            status = linha.split(":", 1)[1].strip()
-
-            if status == "PENDENTE":
-
-                pcs.append({
-                    "ob": ob,
-                    "pc_completa": pc,
-                    "numero": pc.split("PC")[1]
-                })
+        })
 
     return pcs
 
+def marcar_pc_como_ok(linha):
 
-def marcar_pc_como_ok(pc_completa):
-
-    with open("numero_das_pcs.txt", "r", encoding="utf-8") as arquivo:
-        texto = arquivo.read()
-
-    bloco = (
-        f"Prestação Gerada (PC): {pc_completa}\n"
-        "Status: PENDENTE"
+    aba_pcs.update_cell(
+        linha,
+        4,
+        "OK"
     )
-
-    texto = texto.replace(
-        bloco,
-        f"Prestação Gerada (PC): {pc_completa}\nStatus: OK"
-    )
-
-    with open("numero_das_pcs.txt", "w", encoding="utf-8") as arquivo:
-        arquivo.write(texto)
 
 #pasta_download = r"C:\Users\marcos.rigel\Desktop\tramitados" # Caminho para pasta onde os PDFs serão salvos
 
@@ -99,6 +84,11 @@ chrome_options.debugger_address = "127.0.0.1:9222"
 driver = webdriver.Chrome(options=chrome_options)
 driver.implicitly_wait(300)
 
+gc = gspread.service_account(filename="credenciais.json")
+
+planilha = gc.open("NUPCO - base de dados")
+
+aba_pcs = planilha.worksheet("numero_das_pcs")
 
 print("Abrindo eFisco...")
 
@@ -190,7 +180,9 @@ for pc in ler_pcs_pendentes():
     except:
         pass
 
-    marcar_pc_como_ok(pc["pc_completa"])
+    marcar_pc_como_ok(
+        pc["linha"]
+    )
 
     print(f"✅ {pc['pc_completa']} concluída.")
 
